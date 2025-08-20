@@ -20,38 +20,26 @@ def get_user_id():
         with open(USER_FILE, "w") as f:
             f.write(user_id)
         return user_id
-
 USER_ID = get_user_id()
 
 def derive_key(user_id: str) -> bytes:
     hash_bytes = hashlib.sha256(user_id.encode()).digest()
     return base64.urlsafe_b64encode(hash_bytes)
-
 def save_variables(variables: dict, filename: str = "klikdata.enc"):
     json_data = json.dumps(variables, indent=4).encode()
-    
     key = derive_key(USER_ID)
     fernet = Fernet(key)
-    
     encrypted_data = fernet.encrypt(json_data)
-    
     with open(filename, "wb") as f:
         f.write(encrypted_data)
-    
-    print(f"Encrypted data saved to {filename}")
 
 def load_variables(filename: str = "klikdata.enc") -> dict:
     key = derive_key(USER_ID)
     fernet = Fernet(key)
-    
-    # Read encrypted data
     with open(filename, "rb") as f:
         encrypted_data = f.read()
-    
-    # Decrypt and decode JSON
     decrypted_data = fernet.decrypt(encrypted_data)
     variables = json.loads(decrypted_data.decode())
-    
     return variables
 
 def resource_path(relative_path):
@@ -68,11 +56,13 @@ exp_to_next = 100
 klikmulti = 1
 
 items = {
-  "click_upgrade": 50
+  "click_upgrade": 50,
+  "autoclicker": 100,
 }
 
 items_multi = {
-  "click_upgrade": 1
+  "click_upgrade": 1,
+  "autoclicker": 1
 }
 
 app = customtkinter.CTk()
@@ -195,6 +185,18 @@ close_shop.place(x=10, y=10)
 statuslabel = customtkinter.CTkLabel(pg2, text='', width=40, height=28, fg_color='transparent')
 statuslabel.pack(expand=True, side="bottom", padx=10)
 
+autoclick_job = None
+
+def autoclicker(speed: int):
+    global autoclick_job
+    if autoclick_job is not None:
+        app.after_cancel(autoclick_job)
+    def run():
+        global autoclick_job
+        klik()
+        autoclick_job = app.after(int(4000/speed), run)
+    run()
+
 def buy(item: str):
   global kliks, klikmulti, exp
   if item in items:
@@ -208,8 +210,11 @@ def buy(item: str):
       items_multi[item] += 1
       if item == 'click_upgrade':
         klikmulti = int(klikmulti*items_multi['click_upgrade'])
+      elif item == 'autoclicker':
+        autoclicker(items_multi['autoclicker'])
       statuslabel.configure(text=f"successfully bought {item}")
       buy_clicks.configure(text=f"upgrade klik: {items['click_upgrade']}")
+      buy_autoclicker.configure(text=f"upgrade autokliker: {items['autoclicker']}")
     else:
       statuslabel.configure(text='not enough kliks!')
   else:
@@ -218,6 +223,9 @@ def buy(item: str):
 buy_clicks = customtkinter.CTkButton(pg2, text=f"upgrade klik: {items['click_upgrade']}", width=140, height=28, command=lambda: buy("click_upgrade"))
 buy_clicks.pack(expand=True)
 
+buy_autoclicker = customtkinter.CTkButton(pg2, text=f"buy autokliker: {items['autoclicker']}", width=140, height=28, command=lambda: buy("autoclicker"))
+buy_autoclicker.pack(expand=True)
+
 try:
     loaded = load_variables("klikdata.enc")
     kliks = loaded.get("kliks", 0)
@@ -225,18 +233,21 @@ try:
     exp = loaded.get("exp", 0)
     exp_to_next = loaded.get("exp_to_next", 100)
     klikmulti = loaded.get("klikmulti", 1)
-    items_multi = loaded.get("items_multi", {"click_upgrade": 1})
-    items = loaded.get("items", {"click_upgrade": 50})
+    items_multi = loaded.get("items_multi", {"click_upgrade": 1, "autoclicker": 1})
+    items = loaded.get("items", {"click_upgrade": 50, "autoclicker": 100})
 
     klikamount.configure(text=f"kliks: {kliks}")
     level_label.configure(text=f"level: {level}")
     expamount.configure(text=f"exp: {exp}/{exp_to_next}")
     levelbar.set(exp / exp_to_next)
     buy_clicks.configure(text=f"upgrade klik: {items['click_upgrade']}")
+    if items_multi['autoclicker'] > 1:
+        buy_autoclicker.configure(text=f"upgrade autokliker: {items['autoclicker']}")
+        autoclicker(items_multi['autoclicker'])
+    else:
+        buy_autoclicker.configure(text=f"buy autokliker: {items['autoclicker']}")
 except FileNotFoundError:
     pass
-except Exception as e:
-    print("Failed to load save file:", e)
 
 def on_close():
     save_variables(get_savevars())
