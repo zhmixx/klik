@@ -94,9 +94,14 @@ levelbar = customtkinter.CTkProgressBar(stats_row2, orientation="horizontal", he
 levelbar.pack(side="top", padx=10, pady=1)
 levelbar.set(0)
 level_label = customtkinter.CTkLabel(
-    stats_row, text=f"level: {level}", width=40, height=28, fg_color="transparent"
+    stats_row,
+    text=f"level: {level}",
+    width=40,
+    height=28,
+    fg_color="transparent"
 )
 level_label.pack(side="left", padx=10, pady=0)
+
 expamount = customtkinter.CTkLabel(
     stats_row,
     text=f"exp: {exp}/{exp_to_next}",
@@ -252,9 +257,7 @@ def buy(item: str):
                 autoclicker(items_multi["autoclicker"])
             statuslabel.configure(text=f"successfully bought {item}")
             buy_clicks.configure(text=f"upgrade klik: {items['click_upgrade']}")
-            buy_autoclicker.configure(
-                text=f"upgrade autokliker: {items['autoclicker']}"
-            )
+            buy_autoclicker.configure(text=f"upgrade autokliker: {items['autoclicker']}")
         else:
             statuslabel.configure(text="not enough kliks!")
     else:
