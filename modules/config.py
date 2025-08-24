@@ -1,3 +1,6 @@
+from modules.utils import get_user_id
+
+USER_ID = get_user_id()
 kliks = 0
 level = 1
 exp = 0

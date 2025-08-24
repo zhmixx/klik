@@ -5,7 +5,8 @@ import sys
 import random
 import os
 import uuid
-from main import *
+from cryptography.fernet import Fernet
+import modules.config as c
 
 def get_appdata_folder() -> str:
     appdata_path = os.getenv('APPDATA')
@@ -28,21 +29,19 @@ def get_user_id() -> str:
         f.write(user_id)
     return user_id
 
-USER_ID = get_user_id()
-
 def derive_key(user_id: str) -> bytes:
     hash_bytes = hashlib.sha256(user_id.encode()).digest()
     return base64.urlsafe_b64encode(hash_bytes)
 
 def save_variables(variables: dict, filename: str = "data.klik"):
     json_data = json.dumps(variables, indent=4).encode()
-    fernet = Fernet(derive_key(USER_ID))
+    fernet = Fernet(derive_key(c.USER_ID))
     encrypted_data = fernet.encrypt(json_data)
     with open(get_appdata_file(filename), "wb") as f:
         f.write(encrypted_data)
 
 def load_variables(filename: str = "data.klik") -> dict:
-    fernet = Fernet(derive_key(USER_ID))
+    fernet = Fernet(derive_key(c.USER_ID))
     with open(get_appdata_file(filename), "rb") as f:
         encrypted_data = f.read()
     decrypted_data = fernet.decrypt(encrypted_data)
@@ -56,76 +55,71 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 def gain_exp(amount: int):
-    global exp, level, exp_to_next, levelbar
     exp += amount
-    expamount.configure(text=f"exp: {exp}/{exp_to_next}")
+    c.expamount.configure(text=f"exp: {exp}/{exp_to_next}")
     while exp >= exp_to_next:
         exp -= exp_to_next
-        level += 1
-        exp_to_next = int(100 * (level**1.5))
-        level_label.configure(text=f"level: {level}")
-        index = random.randint(0, len(normal_colors) - 1)
-        kliker.configure(
-            fg_color=normal_colors[index], hover_color=darkened_colors[index]
+        c.level += 1
+        exp_to_next = int(100 * (c.level**1.5))
+        c.level_label.configure(text=f"level: {c.level}")
+        index = random.randint(0, len(c.normal_colors) - 1)
+        c.kliker.configure(
+            fg_color=c.normal_colors[index], hover_color=c.darkened_colors[index]
         )
-    expamount.configure(text=f"exp: {exp}/{exp_to_next}")
-    levelbar.set(exp / exp_to_next)
+    c.expamount.configure(text=f"exp: {exp}/{exp_to_next}")
+    c.levelbar.set(exp / exp_to_next)
 
 def klik():
-    global kliks, klikmulti, exp, normal_colors, darkened_colors
-    kliks += klikmulti
-    klikfg = random.choice(normal_colors)
-    klikhv = random.choice(darkened_colors)
-    klikamount.configure(text=f"kliks: {kliks}")
-    gain_exp(int(klikmulti * 2))
+    c.kliks += c.klikmulti
+    c.klikamount.configure(text=f"kliks: {c.kliks}")
+    gain_exp(int(c.klikmulti * 2))
 
 def open_shop():
-    pg1.pack_forget()
-    pg2.pack(fill="both", expand=True)
+    c.pg1.pack_forget()
+    c.pg2.pack(fill="both", expand=True)
 
 def get_savevars():
     return {
-        "kliks": kliks,
-        "level": level,
-        "exp": exp,
-        "exp_to_next": exp_to_next,
-        "klikmulti": klikmulti,
-        "items_multi": items_multi,
-        "items": items,
+        "kliks": c.kliks,
+        "level": c.level,
+        "exp": c.exp,
+        "exp_to_next": c.exp_to_next,
+        "klikmulti": c.klikmulti,
+        "items_multi": c.items_multi,
+        "items": c.items,
     }
 
 def autoclicker(speed: int):
     global autoclick_job
     if autoclick_job is not None:
-        app.after_cancel(autoclick_job)
+        c.app.after_cancel(autoclick_job)
 
     def run():
         global autoclick_job
         klik()
-        autoclick_job = app.after(int(4000 / speed), run)
+        autoclick_job = c.app.after(int(4000 / speed), run)
 
     run()
 
 def buy(item: str):
-    global kliks, klikmulti, exp
-    if item in items:
-        price = items[item]
+    if item in c.items:
+        price = c.items[item]
         if kliks >= price:
             kliks -= price
-            klikamount.configure(text=f"kliks: {kliks}")
+            c.klikamount.configure(text=f"kliks: {kliks}")
             exp += int(price * 0.5)
-            expamount.configure(text=f"exp: {exp}")
-            items[item] = int(items[item] * 1.3)
-            items_multi[item] += 1
+            c.expamount.configure(text=f"exp: {exp}")
+            c.items[item] = int(c.items[item] * 1.3)
+            c.items_multi[item] += 1
             if item == "click_upgrade":
-                klikmulti = int(klikmulti * items_multi["click_upgrade"])
+                klikmulti = int(klikmulti * c.items_multi["click_upgrade"])
             elif item == "autoclicker":
-                autoclicker(items_multi["autoclicker"])
-            statuslabel.configure(text=f"successfully bought {item}")
-            buy_clicks.configure(text=f"upgrade klik: {items['click_upgrade']}")
-            buy_autoclicker.configure(text=f"upgrade autokliker: {items['autoclicker']}")
+                autoclicker(c.items_multi["autoclicker"])
+            c.statuslabel.configure(text=f"successfully bought {item}")
+            c.buy_clicks.configure(text=f"upgrade klik: {c.items['click_upgrade']}")
+            c.buy_autoclicker.configure(text=f"upgrade autokliker: {c.items['autoclicker']}")
         else:
-            statuslabel.configure(text="not enough kliks!")
+            c.statuslabel.configure(text="not enough kliks!")
     else:
         print(f"ERROR: ITEM '{item}' DOES NOT EXIST")
 
