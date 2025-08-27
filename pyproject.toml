@@ -1,7 +1,7 @@
 [project]
 name = "klik"
 version = "0.1.0"
-description = "Add your description here"
+description = "klik!! is a fun clicker game made in python"
 readme = "README.md"
 requires-python = ">=3.13.3"
 dependencies = [
