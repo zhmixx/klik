@@ -9,16 +9,19 @@ import json
 import sys
 import random
 
+
 def get_appdata_folder() -> str:
-    appdata_path = os.getenv('APPDATA')
+    appdata_path = os.getenv("APPDATA")
     if not appdata_path:
         raise RuntimeError("we're fucked")
     folder = os.path.join(appdata_path, "klik")
     os.makedirs(folder, exist_ok=True)
     return folder
 
+
 def get_appdata_file(filename: str) -> str:
     return os.path.join(get_appdata_folder(), filename)
+
 
 def get_user_id() -> str:
     user_file = get_appdata_file("user.klik")
@@ -30,11 +33,14 @@ def get_user_id() -> str:
         f.write(user_id)
     return user_id
 
+
 USER_ID = get_user_id()
+
 
 def derive_key(user_id: str) -> bytes:
     hash_bytes = hashlib.sha256(user_id.encode()).digest()
     return base64.urlsafe_b64encode(hash_bytes)
+
 
 def save_variables(variables: dict, filename: str = "data.klik"):
     json_data = json.dumps(variables, indent=4).encode()
@@ -43,6 +49,7 @@ def save_variables(variables: dict, filename: str = "data.klik"):
     with open(get_appdata_file(filename), "wb") as f:
         f.write(encrypted_data)
 
+
 def load_variables(filename: str = "data.klik") -> dict:
     fernet = Fernet(derive_key(USER_ID))
     with open(get_appdata_file(filename), "rb") as f:
@@ -50,12 +57,14 @@ def load_variables(filename: str = "data.klik") -> dict:
     decrypted_data = fernet.decrypt(encrypted_data)
     return json.loads(decrypted_data.decode())
 
+
 def resource_path(relative_path):
     try:
         base_path = sys._MEIPASS
     except AttributeError:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
+
 
 kliks = 0
 level = 1
@@ -94,11 +103,7 @@ levelbar = customtkinter.CTkProgressBar(stats_row2, orientation="horizontal", he
 levelbar.pack(side="top", padx=10, pady=1)
 levelbar.set(0)
 level_label = customtkinter.CTkLabel(
-    stats_row,
-    text=f"level: {level}",
-    width=40,
-    height=28,
-    fg_color="transparent"
+    stats_row, text=f"level: {level}", width=40, height=28, fg_color="transparent"
 )
 level_label.pack(side="left", padx=10, pady=0)
 
@@ -110,6 +115,7 @@ expamount = customtkinter.CTkLabel(
     fg_color="transparent",
 )
 expamount.pack(side="left", padx=10, pady=0)
+
 
 def gain_exp(amount: int):
     global exp, level, exp_to_next, levelbar
@@ -126,6 +132,7 @@ def gain_exp(amount: int):
         )
     expamount.configure(text=f"exp: {exp}/{exp_to_next}")
     levelbar.set(exp / exp_to_next)
+
 
 normal_colors = [
     "#FF0000",
@@ -149,13 +156,17 @@ darkened_colors = [
     "#400040",
 ]
 
+
 def klik():
     global kliks, klikmulti, exp, normal_colors, darkened_colors
     kliks += klikmulti
-    klikfg = random.choice(normal_colors)
-    klikhv = random.choice(darkened_colors)
+    # Not sure if these are for a future update or something but they don't do anything currently
+    # and my linter hates that - unseeyou
+    # klikfg = random.choice(normal_colors)
+    # klikhv = random.choice(darkened_colors)
     klikamount.configure(text=f"kliks: {kliks}")
     gain_exp(int(klikmulti * 2))
+
 
 klikimg = customtkinter.CTkImage(
     light_image=Image.open(resource_path("res/klik.png")),
@@ -180,14 +191,17 @@ klikamount = customtkinter.CTkLabel(
 )
 klikamount.pack(side="top")
 
+
 def open_shop():
     pg1.pack_forget()
     pg2.pack(fill="both", expand=True)
+
 
 shopbutton = customtkinter.CTkButton(
     btn_row, text="shop", width=140, height=28, command=open_shop
 )
 shopbutton.pack(pady=5, padx=5)
+
 
 def get_savevars():
     return {
@@ -200,6 +214,7 @@ def get_savevars():
         "items": items,
     }
 
+
 savebutton = customtkinter.CTkButton(
     btn_row,
     text="save",
@@ -211,9 +226,11 @@ savebutton.pack(pady=5, padx=5)
 
 pg2 = customtkinter.CTkFrame(app)
 
+
 def close_shop():
     pg2.pack_forget()
     pg1.pack(fill="both", expand=True)
+
 
 close_shop = customtkinter.CTkButton(
     pg2, text="<< close shop", width=100, height=28, command=close_shop
@@ -228,6 +245,7 @@ statuslabel.pack(expand=True, side="bottom", padx=10)
 
 autoclick_job = None
 
+
 def autoclicker(speed: int):
     global autoclick_job
     if autoclick_job is not None:
@@ -239,6 +257,7 @@ def autoclicker(speed: int):
         autoclick_job = app.after(int(4000 / speed), run)
 
     run()
+
 
 def buy(item: str):
     global kliks, klikmulti, exp
@@ -257,7 +276,9 @@ def buy(item: str):
                 autoclicker(items_multi["autoclicker"])
             statuslabel.configure(text=f"successfully bought {item}")
             buy_clicks.configure(text=f"upgrade klik: {items['click_upgrade']}")
-            buy_autoclicker.configure(text=f"upgrade autokliker: {items['autoclicker']}")
+            buy_autoclicker.configure(
+                text=f"upgrade autokliker: {items['autoclicker']}"
+            )
         else:
             statuslabel.configure(text="not enough kliks!")
     else:
@@ -305,9 +326,11 @@ try:
 except FileNotFoundError:
     pass
 
+
 def on_close():
     save_variables(get_savevars())
     app.destroy()
+
 
 app.protocol("WM_DELETE_WINDOW", on_close)
 
