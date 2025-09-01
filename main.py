@@ -160,10 +160,6 @@ darkened_colors = [
 def klik():
     global kliks, klikmulti, exp, normal_colors, darkened_colors
     kliks += klikmulti
-    # Not sure if these are for a future update or something but they don't do anything currently
-    # and my linter hates that - unseeyou
-    # klikfg = random.choice(normal_colors)
-    # klikhv = random.choice(darkened_colors)
     klikamount.configure(text=f"kliks: {kliks}")
     gain_exp(int(klikmulti * 2))
 
