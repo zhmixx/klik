@@ -1,11 +1,9 @@
 from dataclasses import dataclass
 
-from modules.utils import get_user_id
-
 
 @dataclass
 class _Config:
-    USER_ID: str = get_user_id()
+    USER_ID: str = ""  # gets updated in main.py when app starts, changed to remove circular import
     kliks: int = 0
     level: int = 1
     exp: int = 0
