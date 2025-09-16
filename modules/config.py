@@ -1,16 +1,10 @@
 from dataclasses import dataclass
 import json
 import os
-import hashlib
-import base64
 from cryptography.fernet import Fernet
 import sys
 
-def derive_key(user_id: str) -> bytes:
-    hash_bytes = hashlib.sha256(user_id.encode()).digest()
-    return base64.urlsafe_b64encode(hash_bytes)
-
-def get_user_id(filename: str = "data.klik") -> str:
+def get_user_id(filename: str = "user.klik") -> bytes:
     appdata_path = os.getenv("APPDATA")
     if not appdata_path:
         raise RuntimeError("Unable to locate APPDATA directory")
@@ -19,15 +13,14 @@ def get_user_id(filename: str = "data.klik") -> str:
     user_file = os.path.join(folder, filename)
     if os.path.exists(user_file):
         with open(user_file, "r") as f:
-            return f.read().strip()
-    user_id = str(uuid.uuid4())
+            return eval(f.read().strip())
+    user_id = Fernet.generate_key()
     with open(user_file, "w") as f:
-        f.write(user_id)
+        f.write(str(user_id))
     return user_id
 
 def load_variables(filename: str = "data.klik") -> dict:
-    print(get_user_id())
-    fernet = Fernet(derive_key(get_user_id()))
+    fernet = Fernet(get_user_id())
 
     appdata_path = os.getenv("APPDATA")
     if not appdata_path:
@@ -102,4 +95,5 @@ try:
 except Exception as err:
     tb = sys.exception().__traceback__
     print(type(err), err.with_traceback(tb))
+    raise err
     config = _Config()
