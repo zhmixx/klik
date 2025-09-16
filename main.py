@@ -28,12 +28,14 @@ btn_row = customtkinter.CTkFrame(pg1, fg_color="transparent")
 btn_row.pack(pady=5)
 
 levelbar = customtkinter.CTkProgressBar(stats_row2, orientation="horizontal", height=5)
+config.levelbar = levelbar
 levelbar.pack(side="top", padx=10, pady=1)
 levelbar.set(0)
 level_label = customtkinter.CTkLabel(
     stats_row, text=f"level: {config.level}", width=40, height=28, fg_color="transparent"
 )
 level_label.pack(side="left", padx=10, pady=0)
+config.level_label = level_label
 
 expamount = customtkinter.CTkLabel(
     stats_row,
@@ -43,6 +45,7 @@ expamount = customtkinter.CTkLabel(
     fg_color="transparent",
 )
 expamount.pack(side="left", padx=10, pady=0)
+config.expamount = expamount
 
 klikimg = customtkinter.CTkImage(
     light_image=Image.open(resource_path("res/klik.png")),
@@ -62,10 +65,14 @@ kliker = customtkinter.CTkButton(
 )
 kliker.pack(expand=True)
 
+config.kliker = kliker
+
 klikamount = customtkinter.CTkLabel(
     click_row, text=f"kliks: {config.kliks}", width=40, height=28, fg_color="transparent"
 )
 klikamount.pack(side="top")
+
+config.klikamount = klikamount
 
 
 def open_shop():
@@ -105,6 +112,7 @@ statuslabel = customtkinter.CTkLabel(
     pg2, text="", width=40, height=28, fg_color="transparent"
 )
 statuslabel.pack(expand=True, side="bottom", padx=10)
+config.statuslabel = statuslabel
 
 buy_clicks = customtkinter.CTkButton(
     pg2,
@@ -114,6 +122,7 @@ buy_clicks = customtkinter.CTkButton(
     command=lambda: buy("click_upgrade"),
 )
 buy_clicks.pack(expand=True)
+config.buy_clicks = buy_clicks
 
 buy_autoclicker = customtkinter.CTkButton(
     pg2,
@@ -123,6 +132,7 @@ buy_autoclicker = customtkinter.CTkButton(
     command=lambda: buy("autoclicker"),
 )
 buy_autoclicker.pack(expand=True)
+config.buy_autoclicker = buy_autoclicker
 
 try:
     klikamount.configure(text=f"kliks: {config.kliks}")

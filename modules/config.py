@@ -1,18 +1,40 @@
 from dataclasses import dataclass
 import json
 import os
+import hashlib
+import base64
 from cryptography.fernet import Fernet
+import sys
 
+def derive_key(user_id: str) -> bytes:
+    hash_bytes = hashlib.sha256(user_id.encode()).digest()
+    return base64.urlsafe_b64encode(hash_bytes)
+
+def get_user_id(filename: str = "data.klik") -> str:
+    appdata_path = os.getenv("APPDATA")
+    if not appdata_path:
+        raise RuntimeError("Unable to locate APPDATA directory")
+    folder = os.path.join(appdata_path, "klik")
+    os.makedirs(folder, exist_ok=True)
+    user_file = os.path.join(folder, filename)
+    if os.path.exists(user_file):
+        with open(user_file, "r") as f:
+            return f.read().strip()
+    user_id = str(uuid.uuid4())
+    with open(user_file, "w") as f:
+        f.write(user_id)
+    return user_id
 
 def load_variables(filename: str = "data.klik") -> dict:
-    fernet = Fernet(derive_key(config.USER_ID))
+    print(get_user_id())
+    fernet = Fernet(derive_key(get_user_id()))
 
     appdata_path = os.getenv("APPDATA")
     if not appdata_path:
         raise RuntimeError("Unable to locate APPDATA directory")
     folder = os.path.join(appdata_path, "klik")
     os.makedirs(folder, exist_ok=True)
-    fp = os.path.join(get_appdata_folder(), filename)
+    fp = os.path.join(folder, filename)
 
     with open(fp, "rb") as f:
         encrypted_data = f.read()
@@ -75,4 +97,9 @@ class _Config:
 
 
 # still figuring out a way to make stuff work - zhmixx
-config = _Config()
+try:
+    config = _Config.from_save()
+except Exception as err:
+    tb = sys.exception().__traceback__
+    print(type(err), err.with_traceback(tb))
+    config = _Config()
