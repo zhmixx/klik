@@ -1,40 +1,18 @@
-import customtkinter
-from PIL import Image
-import os
-import uuid
-from cryptography.fernet import Fernet
 import base64
 import hashlib
 import json
-import sys
+import os
 import random
+import sys
 
+import customtkinter
+from PIL import Image
+from cryptography.fernet import Fernet
 
-def get_appdata_folder() -> str:
-    appdata_path = os.getenv("APPDATA")
-    if not appdata_path:
-        raise RuntimeError("we're fucked")
-    folder = os.path.join(appdata_path, "klik")
-    os.makedirs(folder, exist_ok=True)
-    return folder
+from modules.config import config
+from modules.utils import get_appdata_file, get_user_id
 
-
-def get_appdata_file(filename: str) -> str:
-    return os.path.join(get_appdata_folder(), filename)
-
-
-def get_user_id() -> str:
-    user_file = get_appdata_file("user.klik")
-    if os.path.exists(user_file):
-        with open(user_file, "r") as f:
-            return f.read().strip()
-    user_id = str(uuid.uuid4())
-    with open(user_file, "w") as f:
-        f.write(user_id)
-    return user_id
-
-
-USER_ID = get_user_id()
+config.USER_ID = get_user_id()
 
 
 def derive_key(user_id: str) -> bytes:
@@ -44,14 +22,15 @@ def derive_key(user_id: str) -> bytes:
 
 def save_variables(variables: dict, filename: str = "data.klik"):
     json_data = json.dumps(variables, indent=4).encode()
-    fernet = Fernet(derive_key(USER_ID))
+    fernet = Fernet(derive_key(config.USER_ID))
     encrypted_data = fernet.encrypt(json_data)
     with open(get_appdata_file(filename), "wb") as f:
         f.write(encrypted_data)
 
 
+# apparently this function has no usages?
 def load_variables(filename: str = "data.klik") -> dict:
-    fernet = Fernet(derive_key(USER_ID))
+    fernet = Fernet(derive_key(config.USER_ID))
     with open(get_appdata_file(filename), "rb") as f:
         encrypted_data = f.read()
     decrypted_data = fernet.decrypt(encrypted_data)
@@ -65,19 +44,6 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
-
-kliks = 0
-level = 1
-exp = 0
-exp_to_next = 100
-klikmulti = 1
-
-items = {
-    "click_upgrade": 50,
-    "autoclicker": 100,
-}
-
-items_multi = {"click_upgrade": 1, "autoclicker": 1}
 
 app = customtkinter.CTk()
 app.geometry("600x500")
@@ -103,13 +69,13 @@ levelbar = customtkinter.CTkProgressBar(stats_row2, orientation="horizontal", he
 levelbar.pack(side="top", padx=10, pady=1)
 levelbar.set(0)
 level_label = customtkinter.CTkLabel(
-    stats_row, text=f"level: {level}", width=40, height=28, fg_color="transparent"
+    stats_row, text=f"level: {config.level}", width=40, height=28, fg_color="transparent"
 )
 level_label.pack(side="left", padx=10, pady=0)
 
 expamount = customtkinter.CTkLabel(
     stats_row,
-    text=f"exp: {exp}/{exp_to_next}",
+    text=f"exp: {config.exp}/{config.exp_to_next}",
     width=40,
     height=28,
     fg_color="transparent",
@@ -118,50 +84,25 @@ expamount.pack(side="left", padx=10, pady=0)
 
 
 def gain_exp(amount: int):
-    global exp, level, exp_to_next, levelbar
-    exp += amount
-    expamount.configure(text=f"exp: {exp}/{exp_to_next}")
-    while exp >= exp_to_next:
-        exp -= exp_to_next
-        level += 1
-        exp_to_next = int(100 * (level**1.5))
-        level_label.configure(text=f"level: {level}")
+    config.exp += amount
+    expamount.configure(text=f"exp: {config.exp}/{config.exp_to_next}")
+    while config.exp >= config.exp_to_next:
+        config.exp -= config.exp_to_next
+        config.level += 1
+        config.exp_to_next = int(100 * (config.level**1.5))
+        level_label.configure(text=f"level: {config.level}")
         index = random.randint(0, len(normal_colors) - 1)
         kliker.configure(
-            fg_color=normal_colors[index], hover_color=darkened_colors[index]
+            fg_color=config.normal_colors[index], hover_color=config.darkened_colors[index]
         )
-    expamount.configure(text=f"exp: {exp}/{exp_to_next}")
-    levelbar.set(exp / exp_to_next)
-
-
-normal_colors = [
-    "#FF0000",
-    "#00FF00",
-    "#0000FF",
-    "#FFFF00",
-    "#00FFFF",
-    "#FF00FF",
-    "#FFA500",
-    "#800080",
-]
-
-darkened_colors = [
-    "#800000",
-    "#008000",
-    "#000080",
-    "#808000",
-    "#008080",
-    "#800080",
-    "#804B00",
-    "#400040",
-]
+    expamount.configure(text=f"exp: {config.exp}/{config.exp_to_next}")
+    levelbar.set(config.exp / config.exp_to_next)
 
 
 def klik():
-    global kliks, klikmulti, exp, normal_colors, darkened_colors
-    kliks += klikmulti
-    klikamount.configure(text=f"kliks: {kliks}")
-    gain_exp(int(klikmulti * 2))
+    config.kliks += config.klikmulti
+    klikamount.configure(text=f"kliks: {config.kliks}")
+    gain_exp(int(config.klikmulti * 2))
 
 
 klikimg = customtkinter.CTkImage(
@@ -183,7 +124,7 @@ kliker = customtkinter.CTkButton(
 kliker.pack(expand=True)
 
 klikamount = customtkinter.CTkLabel(
-    click_row, text=f"kliks: {kliks}", width=40, height=28, fg_color="transparent"
+    click_row, text=f"kliks: {config.kliks}", width=40, height=28, fg_color="transparent"
 )
 klikamount.pack(side="top")
 
@@ -201,13 +142,13 @@ shopbutton.pack(pady=5, padx=5)
 
 def get_savevars():
     return {
-        "kliks": kliks,
-        "level": level,
-        "exp": exp,
-        "exp_to_next": exp_to_next,
-        "klikmulti": klikmulti,
-        "items_multi": items_multi,
-        "items": items,
+        "kliks": config.kliks,
+        "level": config.level,
+        "exp": config.exp,
+        "exp_to_next": config.exp_to_next,
+        "klikmulti": config.klikmulti,
+        "items_multi": config.items_multi,
+        "items": config.items,
     }
 
 
@@ -239,41 +180,36 @@ statuslabel = customtkinter.CTkLabel(
 )
 statuslabel.pack(expand=True, side="bottom", padx=10)
 
-autoclick_job = None
-
 
 def autoclicker(speed: int):
-    global autoclick_job
-    if autoclick_job is not None:
-        app.after_cancel(autoclick_job)
+    if config.autoclick_job is not None:
+        app.after_cancel(config.autoclick_job)
 
     def run():
-        global autoclick_job
         klik()
-        autoclick_job = app.after(int(4000 / speed), run)
+        config.autoclick_job = app.after(int(4000 / speed), run)
 
     run()
 
 
 def buy(item: str):
-    global kliks, klikmulti, exp
-    if item in items:
-        price = items[item]
-        if kliks >= price:
-            kliks -= price
-            klikamount.configure(text=f"kliks: {kliks}")
-            exp += int(price * 0.5)
-            expamount.configure(text=f"exp: {exp}")
-            items[item] = int(items[item] * 1.3)
-            items_multi[item] += 1
+    if item in config.items:
+        price = config.items[item]
+        if config.kliks >= price:
+            config.kliks -= price
+            klikamount.configure(text=f"kliks: {config.kliks}")
+            config.exp += int(price * 0.5)
+            expamount.configure(text=f"exp: {config.exp}")
+            config.items[item] = int(config.items[item] * 1.3)
+            config.items_multi[item] += 1
             if item == "click_upgrade":
-                klikmulti = int(klikmulti * items_multi["click_upgrade"])
+                config.klikmulti = int(config.klikmulti * config.items_multi["click_upgrade"])
             elif item == "autoclicker":
-                autoclicker(items_multi["autoclicker"])
+                autoclicker(config.items_multi["autoclicker"])
             statuslabel.configure(text=f"successfully bought {item}")
-            buy_clicks.configure(text=f"upgrade klik: {items['click_upgrade']}")
+            buy_clicks.configure(text=f"upgrade klik: {config.items['click_upgrade']}")
             buy_autoclicker.configure(
-                text=f"upgrade autokliker: {items['autoclicker']}"
+                text=f"upgrade autokliker: {config.items['autoclicker']}"
             )
         else:
             statuslabel.configure(text="not enough kliks!")
@@ -283,7 +219,7 @@ def buy(item: str):
 
 buy_clicks = customtkinter.CTkButton(
     pg2,
-    text=f"upgrade klik: {items['click_upgrade']}",
+    text=f"upgrade klik: {config.items['click_upgrade']}",
     width=140,
     height=28,
     command=lambda: buy("click_upgrade"),
@@ -292,7 +228,7 @@ buy_clicks.pack(expand=True)
 
 buy_autoclicker = customtkinter.CTkButton(
     pg2,
-    text=f"buy autokliker: {items['autoclicker']}",
+    text=f"buy autokliker: {config.items['autoclicker']}",
     width=140,
     height=28,
     command=lambda: buy("autoclicker"),
@@ -300,25 +236,16 @@ buy_autoclicker = customtkinter.CTkButton(
 buy_autoclicker.pack(expand=True)
 
 try:
-    loaded = load_variables("data.klik")
-    kliks = loaded.get("kliks", 0)
-    level = loaded.get("level", 1)
-    exp = loaded.get("exp", 0)
-    exp_to_next = loaded.get("exp_to_next", 100)
-    klikmulti = loaded.get("klikmulti", 1)
-    items_multi = loaded.get("items_multi", {"click_upgrade": 1, "autoclicker": 1})
-    items = loaded.get("items", {"click_upgrade": 50, "autoclicker": 100})
-
-    klikamount.configure(text=f"kliks: {kliks}")
-    level_label.configure(text=f"level: {level}")
-    expamount.configure(text=f"exp: {exp}/{exp_to_next}")
-    levelbar.set(exp / exp_to_next)
-    buy_clicks.configure(text=f"upgrade klik: {items['click_upgrade']}")
-    if items_multi["autoclicker"] > 1:
-        buy_autoclicker.configure(text=f"upgrade autokliker: {items['autoclicker']}")
-        autoclicker(items_multi["autoclicker"])
+    klikamount.configure(text=f"kliks: {config.kliks}")
+    level_label.configure(text=f"level: {config.level}")
+    expamount.configure(text=f"exp: {config.exp}/{config.exp_to_next}")
+    levelbar.set(config.exp / config.exp_to_next)
+    buy_clicks.configure(text=f"upgrade klik: {config.items['click_upgrade']}")
+    if config.items_multi["autoclicker"] > 1:
+        buy_autoclicker.configure(text=f"upgrade autokliker: {config.items['autoclicker']}")
+        autoclicker(config.items_multi["autoclicker"])
     else:
-        buy_autoclicker.configure(text=f"buy autokliker: {items['autoclicker']}")
+        buy_autoclicker.configure(text=f"buy autokliker: {config.items['autoclicker']}")
 except FileNotFoundError:
     pass
 
