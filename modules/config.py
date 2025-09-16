@@ -3,6 +3,7 @@ import json
 import os
 from cryptography.fernet import Fernet
 import sys
+from inspect import signature
 
 def get_user_id(filename: str = "user.klik") -> bytes:
     appdata_path = os.getenv("APPDATA")
@@ -38,7 +39,7 @@ def load_variables(filename: str = "data.klik") -> dict:
 
 @dataclass
 class _Config:
-    USER_ID: str = ""  # gets updated in main.py when app starts, changed to remove circular import
+    USER_ID: bytes = b""  # gets updated in main.py when app starts, changed to remove circular import
     kliks: int = 0
     level: int = 1
     exp: int = 0
@@ -86,7 +87,23 @@ class _Config:
 
     @classmethod
     def from_save(cls):
-        return cls(**load_variables())
+        data = load_variables()
+        cls_fields = {field for field in signature(cls).parameters}
+        # split the kwargs into native ones and new ones
+        native_args, new_args = {}, {}
+        for name, val in data.items():
+            if name in cls_fields:
+                native_args[name] = val
+            else:
+                new_args[name] = val
+
+        # use the native ones to create the class ...
+        ret = cls(**native_args)
+
+        # ... and add the new ones by hand
+        for new_name, new_val in new_args.items():
+            setattr(ret, new_name, new_val)
+        return ret
 
 
 # still figuring out a way to make stuff work - zhmixx
