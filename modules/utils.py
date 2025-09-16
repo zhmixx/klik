@@ -46,14 +46,6 @@ def save_variables(variables: dict, filename: str = "data.klik"):
         f.write(encrypted_data)
 
 
-def load_variables(filename: str = "data.klik") -> dict:
-    fernet = Fernet(derive_key(c.USER_ID))
-    with open(get_appdata_file(filename), "rb") as f:
-        encrypted_data = f.read()
-    decrypted_data = fernet.decrypt(encrypted_data)
-    return json.loads(decrypted_data.decode())
-
-
 def resource_path(relative_path):
     try:
         base_path = sys._MEIPASS
@@ -85,11 +77,6 @@ def klik():
     gain_exp(int(c.klikmulti * 2))
 
 
-def open_shop():
-    c.pg1.pack_forget()
-    c.pg2.pack(fill="both", expand=True)
-
-
 def get_savevars():
     return {
         "kliks": c.kliks,
@@ -103,14 +90,12 @@ def get_savevars():
 
 
 def autoclicker(speed: int):
-    global autoclick_job
-    if autoclick_job is not None:
-        c.app.after_cancel(autoclick_job)
+    if c.autoclick_job is not None:
+        c.app.after_cancel(c.autoclick_job)
 
     def run():
-        global autoclick_job
         klik()
-        autoclick_job = c.app.after(int(4000 / speed), run)
+        c.autoclick_job = c.app.after(int(4000 / speed), run)
 
     run()
 

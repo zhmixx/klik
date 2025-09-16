@@ -1,4 +1,24 @@
 from dataclasses import dataclass
+import json
+import os
+from cryptography.fernet import Fernet
+
+
+def load_variables(filename: str = "data.klik") -> dict:
+    fernet = Fernet(derive_key(config.USER_ID))
+
+    appdata_path = os.getenv("APPDATA")
+    if not appdata_path:
+        raise RuntimeError("Unable to locate APPDATA directory")
+    folder = os.path.join(appdata_path, "klik")
+    os.makedirs(folder, exist_ok=True)
+    fp = os.path.join(get_appdata_folder(), filename)
+
+    with open(fp, "rb") as f:
+        encrypted_data = f.read()
+    decrypted_data = fernet.decrypt(encrypted_data)
+
+    return json.loads(decrypted_data.decode())
 
 
 @dataclass
@@ -22,8 +42,6 @@ class _Config:
     expamount = None
     kliker = None
     klikamount = None
-    pg1 = None
-    pg2 = None
     statuslabel = None
     buy_clicks = None
     buy_autoclicker = None
@@ -50,6 +68,10 @@ class _Config:
     ]
 
     autoclick_job = None
+
+    @classmethod
+    def from_save(cls):
+        return cls(**load_variables())
 
 
 # still figuring out a way to make stuff work - zhmixx

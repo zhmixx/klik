@@ -1,53 +1,15 @@
-import base64
-import hashlib
-import json
-import os
-import random
-import sys
-
 import customtkinter
 from PIL import Image
-from cryptography.fernet import Fernet
 
 from modules.config import config
-from modules.utils import get_appdata_file, get_user_id
+from modules.utils import get_user_id, save_variables, resource_path, klik, buy, get_savevars, autoclicker
 
 config.USER_ID = get_user_id()
-
-
-def derive_key(user_id: str) -> bytes:
-    hash_bytes = hashlib.sha256(user_id.encode()).digest()
-    return base64.urlsafe_b64encode(hash_bytes)
-
-
-def save_variables(variables: dict, filename: str = "data.klik"):
-    json_data = json.dumps(variables, indent=4).encode()
-    fernet = Fernet(derive_key(config.USER_ID))
-    encrypted_data = fernet.encrypt(json_data)
-    with open(get_appdata_file(filename), "wb") as f:
-        f.write(encrypted_data)
-
-
-# apparently this function has no usages?
-def load_variables(filename: str = "data.klik") -> dict:
-    fernet = Fernet(derive_key(config.USER_ID))
-    with open(get_appdata_file(filename), "rb") as f:
-        encrypted_data = f.read()
-    decrypted_data = fernet.decrypt(encrypted_data)
-    return json.loads(decrypted_data.decode())
-
-
-def resource_path(relative_path):
-    try:
-        base_path = sys._MEIPASS
-    except AttributeError:
-        base_path = os.path.abspath(".")
-    return os.path.join(base_path, relative_path)
-
 
 app = customtkinter.CTk()
 app.geometry("600x500")
 app.title("klik!!")
+config.app = app
 
 app.iconbitmap(resource_path("res/app.ico"))
 
@@ -81,29 +43,6 @@ expamount = customtkinter.CTkLabel(
     fg_color="transparent",
 )
 expamount.pack(side="left", padx=10, pady=0)
-
-
-def gain_exp(amount: int):
-    config.exp += amount
-    expamount.configure(text=f"exp: {config.exp}/{config.exp_to_next}")
-    while config.exp >= config.exp_to_next:
-        config.exp -= config.exp_to_next
-        config.level += 1
-        config.exp_to_next = int(100 * (config.level**1.5))
-        level_label.configure(text=f"level: {config.level}")
-        index = random.randint(0, len(normal_colors) - 1)
-        kliker.configure(
-            fg_color=config.normal_colors[index], hover_color=config.darkened_colors[index]
-        )
-    expamount.configure(text=f"exp: {config.exp}/{config.exp_to_next}")
-    levelbar.set(config.exp / config.exp_to_next)
-
-
-def klik():
-    config.kliks += config.klikmulti
-    klikamount.configure(text=f"kliks: {config.kliks}")
-    gain_exp(int(config.klikmulti * 2))
-
 
 klikimg = customtkinter.CTkImage(
     light_image=Image.open(resource_path("res/klik.png")),
@@ -139,19 +78,6 @@ shopbutton = customtkinter.CTkButton(
 )
 shopbutton.pack(pady=5, padx=5)
 
-
-def get_savevars():
-    return {
-        "kliks": config.kliks,
-        "level": config.level,
-        "exp": config.exp,
-        "exp_to_next": config.exp_to_next,
-        "klikmulti": config.klikmulti,
-        "items_multi": config.items_multi,
-        "items": config.items,
-    }
-
-
 savebutton = customtkinter.CTkButton(
     btn_row,
     text="save",
@@ -179,43 +105,6 @@ statuslabel = customtkinter.CTkLabel(
     pg2, text="", width=40, height=28, fg_color="transparent"
 )
 statuslabel.pack(expand=True, side="bottom", padx=10)
-
-
-def autoclicker(speed: int):
-    if config.autoclick_job is not None:
-        app.after_cancel(config.autoclick_job)
-
-    def run():
-        klik()
-        config.autoclick_job = app.after(int(4000 / speed), run)
-
-    run()
-
-
-def buy(item: str):
-    if item in config.items:
-        price = config.items[item]
-        if config.kliks >= price:
-            config.kliks -= price
-            klikamount.configure(text=f"kliks: {config.kliks}")
-            config.exp += int(price * 0.5)
-            expamount.configure(text=f"exp: {config.exp}")
-            config.items[item] = int(config.items[item] * 1.3)
-            config.items_multi[item] += 1
-            if item == "click_upgrade":
-                config.klikmulti = int(config.klikmulti * config.items_multi["click_upgrade"])
-            elif item == "autoclicker":
-                autoclicker(config.items_multi["autoclicker"])
-            statuslabel.configure(text=f"successfully bought {item}")
-            buy_clicks.configure(text=f"upgrade klik: {config.items['click_upgrade']}")
-            buy_autoclicker.configure(
-                text=f"upgrade autokliker: {config.items['autoclicker']}"
-            )
-        else:
-            statuslabel.configure(text="not enough kliks!")
-    else:
-        print(f"ERROR: ITEM '{item}' DOES NOT EXIST")
-
 
 buy_clicks = customtkinter.CTkButton(
     pg2,
