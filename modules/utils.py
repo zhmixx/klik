@@ -1,10 +1,7 @@
-import base64
-import hashlib
 import json
 import sys
 import random
 import os
-import uuid
 from cryptography.fernet import Fernet
 from modules.config import config as c
 
@@ -22,36 +19,23 @@ def get_appdata_file(filename: str) -> str:
     return os.path.join(get_appdata_folder(), filename)
 
 
-def get_user_id() -> str:
+def get_user_id() -> bytes:
     user_file = get_appdata_file("user.klik")
     if os.path.exists(user_file):
         with open(user_file, "r") as f:
-            return f.read().strip()
-    user_id = str(uuid.uuid4())
+            return eval(f.read().strip())
+    user_id = Fernet.generate_key()
     with open(user_file, "w") as f:
-        f.write(user_id)
+        f.write(str(user_id))
     return user_id
-
-
-def derive_key(user_id: str) -> bytes:
-    hash_bytes = hashlib.sha256(user_id.encode()).digest()
-    return base64.urlsafe_b64encode(hash_bytes)
 
 
 def save_variables(variables: dict, filename: str = "data.klik"):
     json_data = json.dumps(variables, indent=4).encode()
-    fernet = Fernet(derive_key(c.USER_ID))
+    fernet = Fernet(c.USER_ID)
     encrypted_data = fernet.encrypt(json_data)
     with open(get_appdata_file(filename), "wb") as f:
         f.write(encrypted_data)
-
-
-def load_variables(filename: str = "data.klik") -> dict:
-    fernet = Fernet(derive_key(c.USER_ID))
-    with open(get_appdata_file(filename), "rb") as f:
-        encrypted_data = f.read()
-    decrypted_data = fernet.decrypt(encrypted_data)
-    return json.loads(decrypted_data.decode())
 
 
 def resource_path(relative_path):
@@ -85,11 +69,6 @@ def klik():
     gain_exp(int(c.klikmulti * 2))
 
 
-def open_shop():
-    c.pg1.pack_forget()
-    c.pg2.pack(fill="both", expand=True)
-
-
 def get_savevars():
     return {
         "kliks": c.kliks,
@@ -103,14 +82,12 @@ def get_savevars():
 
 
 def autoclicker(speed: int):
-    global autoclick_job
-    if autoclick_job is not None:
-        c.app.after_cancel(autoclick_job)
+    if c.autoclick_job is not None:
+        c.app.after_cancel(c.autoclick_job)
 
     def run():
-        global autoclick_job
         klik()
-        autoclick_job = c.app.after(int(4000 / speed), run)
+        c.autoclick_job = c.app.after(int(4000 / speed), run)
 
     run()
 
