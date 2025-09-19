@@ -4,13 +4,11 @@ import random
 import os
 from cryptography.fernet import Fernet
 from modules.config import config as c
+from platformdirs import user_data_dir
 
 
-def get_appdata_folder() -> str:
-    appdata_path = os.getenv("APPDATA")
-    if not appdata_path:
-        raise RuntimeError("Unable to locate APPDATA directory")
-    folder = os.path.join(appdata_path, "klik")
+def get_appdata_folder() -> str: # remade to be cross-platform (i'm not changing the name) - zhmixx
+    folder = user_data_dir("klik") 
     os.makedirs(folder, exist_ok=True)
     return folder
 
@@ -47,7 +45,6 @@ def resource_path(relative_path):
 
 
 def gain_exp(amount: int):
-    # this was working without saving to the actual config, not sure if intended - unseeyou
     c.exp += amount
     c.expamount.configure(text=f"exp: {c.exp}/{c.exp_to_next}")
     while c.exp >= c.exp_to_next:
@@ -95,7 +92,6 @@ def autoclicker(speed: int):
 def buy(item: str):
     if item in c.items:
         price = c.items[item]
-        # same issue here - unseeyou
         if c.kliks >= price:
             c.kliks -= price
             c.klikamount.configure(text=f"kliks: {c.kliks}")
@@ -116,6 +112,3 @@ def buy(item: str):
             c.statuslabel.configure(text="not enough kliks!")
     else:
         print(f"ERROR: ITEM '{item}' DOES NOT EXIST")
-
-
-# kira will take care of that (i think) - zhmixx

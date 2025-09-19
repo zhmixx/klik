@@ -1,4 +1,6 @@
 import customtkinter
+import tkinter as tk
+import platform
 from PIL import Image
 
 from modules.config import config
@@ -11,7 +13,14 @@ app.geometry("600x500")
 app.title("klik!!")
 config.app = app
 
-app.iconbitmap(resource_path("res/app.ico"))
+if platform.system() == "Windows":
+    app.iconbitmap(resource_path("res/app.ico"))
+else:
+    try:
+        icon = tk.PhotoImage(file=resource_path("res/klik.png"))
+        app.wm_iconphoto(True, icon)
+    except Exception as e:
+        print(f"failed to load window icon: {e}")
 
 pg1 = customtkinter.CTkFrame(app)
 pg1.pack(fill="both", expand=True)

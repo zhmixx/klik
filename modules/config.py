@@ -4,12 +4,10 @@ import os
 from cryptography.fernet import Fernet
 import sys
 from inspect import signature
+from platformdirs import user_data_dir
 
 def get_user_id(filename: str = "user.klik") -> bytes:
-    appdata_path = os.getenv("APPDATA")
-    if not appdata_path:
-        raise RuntimeError("Unable to locate APPDATA directory")
-    folder = os.path.join(appdata_path, "klik")
+    folder = user_data_dir("klik")
     os.makedirs(folder, exist_ok=True)
     user_file = os.path.join(folder, filename)
     if os.path.exists(user_file):
@@ -22,18 +20,14 @@ def get_user_id(filename: str = "user.klik") -> bytes:
 
 def load_variables(filename: str = "data.klik") -> dict:
     fernet = Fernet(get_user_id())
-
-    appdata_path = os.getenv("APPDATA")
-    if not appdata_path:
-        raise RuntimeError("Unable to locate APPDATA directory")
-    folder = os.path.join(appdata_path, "klik")
+    folder = user_data_dir("klik")
     os.makedirs(folder, exist_ok=True)
     fp = os.path.join(folder, filename)
-
+    if not os.path.exists(fp):
+        return {}
     with open(fp, "rb") as f:
         encrypted_data = f.read()
     decrypted_data = fernet.decrypt(encrypted_data)
-
     return json.loads(decrypted_data.decode())
 
 
