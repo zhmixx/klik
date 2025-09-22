@@ -88,6 +88,13 @@ def autoclicker(speed: int):
 
     run()
 
+def click_upgrade():
+    c.klikmulti = int(c.klikmulti * c.items_multi["click_upgrade"])
+
+
+def autoclicker_upgrade():
+    autoclicker(c.items_multi["autoclicker"])
+
 
 def buy(item: str):
     if item in c.items:
@@ -99,10 +106,12 @@ def buy(item: str):
             c.expamount.configure(text=f"exp: {c.exp}")
             c.items[item] = int(c.items[item] * 1.3)
             c.items_multi[item] += 1
+
             if item == "click_upgrade":
-                c.klikmulti = int(c.klikmulti * c.items_multi["click_upgrade"])
+                click_upgrade()
             elif item == "autoclicker":
-                autoclicker(c.items_multi["autoclicker"])
+                autoclicker_upgrade()
+            
             c.statuslabel.configure(text=f"successfully bought {item}")
             c.buy_clicks.configure(text=f"upgrade klik: {c.items['click_upgrade']}")
             c.buy_autoclicker.configure(
