@@ -1,13 +1,14 @@
 [project]
 name = "klik"
-version = "0.1.0"
+version = "1.1.0rc2"
 description = "klik!! is a fun clicker game made in python"
 readme = "README.md"
-requires-python = ">=3.13.3"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "cryptography>=45.0.6",
     "customtkinter>=5.2.2",
     "pillow>=11.3.0",
+    "platformdirs>=4.5.0",
 ]
 
 [dependency-groups]
